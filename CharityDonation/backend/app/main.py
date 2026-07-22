@@ -1,12 +1,17 @@
 import logging
+import os
 
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 
 from app.core.exceptions import AppError
 from app.routers import admin_matches, auth, deliveries, donations, matching, requests, volunteers
+
+UPLOAD_ROOT = "uploads"
+os.makedirs(os.path.join(UPLOAD_ROOT, "receiver_photos"), exist_ok=True)
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -59,6 +64,8 @@ app.include_router(matching.router)
 app.include_router(volunteers.router)
 app.include_router(deliveries.router)
 app.include_router(admin_matches.router)
+
+app.mount("/uploads", StaticFiles(directory=UPLOAD_ROOT), name="uploads")
 
 
 @app.get("/health")

@@ -9,6 +9,9 @@ __pycache__/
 .env
 backend/.env
 
+# User-uploaded runtime files
+backend/uploads/
+
 # Node / frontend
 node_modules/
 dist/

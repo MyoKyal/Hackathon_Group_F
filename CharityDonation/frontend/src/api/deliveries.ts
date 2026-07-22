@@ -1,4 +1,4 @@
-import { apiRequest } from "./client";
+import { apiRequest, apiUpload } from "./client";
 import type { Delivery, DeliveryDetail, MatchCard } from "../types";
 
 export function listMatches() {
@@ -15,8 +15,8 @@ export function confirmVolunteer(deliveryId: string) {
   });
 }
 
-export function confirmReceiver(deliveryId: string) {
-  return apiRequest<Delivery>(`/deliveries/${deliveryId}/confirm-receiver`, {
-    method: "POST",
-  });
+export function confirmReceiver(deliveryId: string, photo: File) {
+  const formData = new FormData();
+  formData.append("photo", photo);
+  return apiUpload<Delivery>(`/deliveries/${deliveryId}/confirm-receiver`, formData);
 }

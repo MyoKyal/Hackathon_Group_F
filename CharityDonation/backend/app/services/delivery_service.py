@@ -1,10 +1,13 @@
+import uuid
 from datetime import datetime, timezone
+from pathlib import Path
 from uuid import UUID
 
+from fastapi import UploadFile
 from sqlalchemy import select
 from sqlalchemy.orm import Session, aliased
 
-from app.core.exceptions import ConflictError, ForbiddenError, NotFoundError
+from app.core.exceptions import BadRequestError, ConflictError, ForbiddenError, NotFoundError
 from app.core.geo import extract_lat_lng, make_point
 from app.models.delivery import Delivery, DeliveryStatus
 from app.models.donation import Donation, DonationStatus
@@ -26,6 +29,7 @@ from app.schemas.delivery import (
 from app.schemas.donation import DonationResponse
 from app.schemas.volunteer import VolunteerApplyRequest
 from app.schemas.warehouse import WarehouseSummary
+from app.services import photo_verification_service
 from app.services.matching import orchestrator
 from app.services.matching.orchestrator import (
     get_current_volunteer_offer,
@@ -216,13 +220,54 @@ def confirm_volunteer(db: Session, user: User, delivery_id: UUID) -> DeliverySum
     return DeliverySummary.model_validate(delivery)
 
 
-def confirm_receiver(db: Session, user: User, delivery_id: UUID) -> DeliverySummary:
+RECEIVER_PHOTO_DIR = Path("uploads") / "receiver_photos"
+RECEIVER_PHOTO_DIR.mkdir(parents=True, exist_ok=True)
+
+RECEIVER_PHOTO_EXTENSION_BY_CONTENT_TYPE = {
+    "image/jpeg": "jpg",
+    "image/png": "png",
+    "image/webp": "webp",
+}
+
+
+def confirm_receiver(db: Session, user: User, delivery_id: UUID, photo: UploadFile) -> DeliverySummary:
     delivery = db.get(Delivery, delivery_id)
     if delivery is None or delivery.receiver_id != user.id:
         raise NotFoundError("Delivery not found")
 
     if delivery.status not in (DeliveryStatus.in_transit, DeliveryStatus.completed):
         raise ForbiddenError("Delivery is not in transit", "invalid_delivery_state")
+
+    extension = RECEIVER_PHOTO_EXTENSION_BY_CONTENT_TYPE.get(photo.content_type or "")
+    if extension is None:
+        raise BadRequestError("Photo must be a JPEG, PNG, or WebP image", "invalid_photo_type")
+
+    image_bytes = photo.file.read()
+    if not image_bytes:
+        raise BadRequestError("Photo file is empty", "invalid_photo_type")
+
+    donation = db.get(Donation, delivery.donation_id)
+    match: bool | None = None
+    reasoning: str | None = None
+    if donation is not None:
+        match, reasoning = photo_verification_service.verify_photo(
+            donation.item_name, donation.item_category, donation.description, image_bytes, photo.content_type,
+        )
+
+    # Block only on a CONFIRMED mismatch. `match is None` means verification
+    # couldn't run at all (quota/timeout/etc.) — treat as unknown and let the
+    # receiver proceed rather than locking confirmation behind Gemini uptime.
+    if match is False:
+        raise BadRequestError(
+            reasoning or "This photo doesn't appear to match the donated item. Please retake the photo and try again.",
+            "photo_mismatch",
+        )
+
+    filename = f"{delivery.id}_{uuid.uuid4().hex}.{extension}"
+    (RECEIVER_PHOTO_DIR / filename).write_bytes(image_bytes)
+    delivery.receiver_photo_path = f"receiver_photos/{filename}"
+    delivery.photo_match = match
+    delivery.photo_verification_reasoning = reasoning
 
     delivery.receiver_confirmed = True
     _maybe_complete_delivery(db, delivery)

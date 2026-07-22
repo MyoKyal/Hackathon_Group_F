@@ -115,6 +115,9 @@ export interface Delivery {
   status: string;
   volunteer_confirmed: boolean;
   receiver_confirmed: boolean;
+  receiver_photo_path?: string | null;
+  photo_match?: boolean | null;
+  photo_verification_reasoning?: string | null;
   created_at: string;
   completed_at?: string | null;
 }

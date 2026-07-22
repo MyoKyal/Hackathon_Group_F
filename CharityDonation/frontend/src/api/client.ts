@@ -1,4 +1,4 @@
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
+export const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
 export class ApiError extends Error {
   code: string;
@@ -37,6 +37,33 @@ export async function apiRequest<T>(
   if (response.status === 204) {
     return undefined as T;
   }
+
+  const data = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    throw new ApiError(
+      data.detail || "Request failed",
+      data.code || "unknown_error",
+      response.status,
+    );
+  }
+
+  return data as T;
+}
+
+export async function apiUpload<T>(path: string, formData: FormData): Promise<T> {
+  const headers: Record<string, string> = {};
+
+  const token = getToken();
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+
+  const response = await fetch(`${API_URL}${path}`, {
+    method: "POST",
+    headers,
+    body: formData,
+  });
 
   const data = await response.json().catch(() => ({}));
 

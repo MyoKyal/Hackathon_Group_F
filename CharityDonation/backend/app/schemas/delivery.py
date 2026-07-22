@@ -20,6 +20,9 @@ class DeliverySummary(BaseModel):
     status: DeliveryStatus
     volunteer_confirmed: bool
     receiver_confirmed: bool
+    receiver_photo_path: str | None = None
+    photo_match: bool | None = None
+    photo_verification_reasoning: str | None = None
     created_at: datetime
     completed_at: datetime | None
 

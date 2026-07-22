@@ -9,6 +9,7 @@ class Settings(BaseSettings):
     jwt_algorithm: str = "HS256"
     jwt_expire_minutes: int = 1440
     gemini_api_key: str = ""
+    openrouter_api_key: str = ""
 
 
 settings = Settings()

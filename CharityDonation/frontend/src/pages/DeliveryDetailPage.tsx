@@ -4,7 +4,7 @@ import { useState } from "react";
 import { confirmReceiver, confirmVolunteer, getDelivery } from "../api/deliveries";
 import { getDeliveryRoute } from "../api/routes";
 import { useAuth } from "../hooks/useAuth";
-import { ApiError } from "../api/client";
+import { API_URL, ApiError } from "../api/client";
 import { RouteMap } from "../components/RouteMap";
 
 export default function DeliveryDetailPage() {
@@ -12,6 +12,8 @@ export default function DeliveryDetailPage() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [error, setError] = useState<string | null>(null);
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
+  const [photoPreviewUrl, setPhotoPreviewUrl] = useState<string | null>(null);
 
   const { data: delivery, isLoading } = useQuery({
     queryKey: ["delivery", id],
@@ -38,10 +40,28 @@ export default function DeliveryDetailPage() {
   });
 
   const receiverConfirm = useMutation({
-    mutationFn: () => confirmReceiver(id!),
-    onSuccess: invalidate,
-    onError: (err) => setError(err instanceof ApiError ? err.message : "Failed to confirm"),
+    mutationFn: (photo: File) => confirmReceiver(id!, photo),
+    onSuccess: () => {
+      setPhotoFile(null);
+      setPhotoPreviewUrl(null);
+      invalidate();
+    },
+    onError: (err) => {
+      if (err instanceof ApiError && err.code === "photo_mismatch") {
+        setError(`${err.message} Please take a new photo and try again.`);
+        setPhotoFile(null);
+        setPhotoPreviewUrl(null);
+      } else {
+        setError(err instanceof ApiError ? err.message : "Failed to confirm");
+      }
+    },
   });
+
+  function handlePhotoSelected(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0] ?? null;
+    setPhotoFile(file);
+    setPhotoPreviewUrl(file ? URL.createObjectURL(file) : null);
+  }
 
   if (isLoading) return <div className="container">Loading...</div>;
   if (!delivery) return <div className="container">Delivery not found.</div>;
@@ -78,14 +98,59 @@ export default function DeliveryDetailPage() {
             Mark delivered (volunteer)
           </button>
         )}
+
         {isReceiver && !delivery.receiver_confirmed && delivery.status === "in_transit" && (
-          <button
-            style={{ marginTop: "0.75rem" }}
-            onClick={() => receiverConfirm.mutate()}
-            disabled={receiverConfirm.isPending}
-          >
-            Confirm received
-          </button>
+          <div style={{ marginTop: "0.75rem" }}>
+            <label>
+              Photo of what you received
+              <input type="file" accept="image/jpeg,image/png,image/webp" onChange={handlePhotoSelected} />
+            </label>
+            {photoPreviewUrl && (
+              <img
+                src={photoPreviewUrl}
+                alt="Preview of received item"
+                style={{ maxWidth: 240, borderRadius: 8, marginTop: "0.5rem", display: "block" }}
+              />
+            )}
+            <button
+              style={{ marginTop: "0.5rem" }}
+              onClick={() => photoFile && receiverConfirm.mutate(photoFile)}
+              disabled={!photoFile || receiverConfirm.isPending}
+            >
+              {receiverConfirm.isPending ? "Confirming..." : "Confirm received"}
+            </button>
+          </div>
+        )}
+
+        {delivery.receiver_photo_path && (
+          <div style={{ marginTop: "0.75rem" }}>
+            <div className="muted">Photo submitted by receiver:</div>
+            <img
+              src={`${API_URL}/uploads/${delivery.receiver_photo_path}`}
+              alt="Item received by recipient"
+              style={{ maxWidth: 240, borderRadius: 8, marginTop: "0.5rem", display: "block" }}
+            />
+            {delivery.photo_match !== null && delivery.photo_match !== undefined && (
+              <div className="row" style={{ marginTop: "0.5rem", alignItems: "center" }}>
+                <span
+                  className="badge"
+                  style={!delivery.photo_match ? { background: "#fee2e2", color: "#dc2626" } : undefined}
+                >
+                  AI check: {delivery.photo_match ? "verified match" : "flagged mismatch"}
+                </span>
+              </div>
+            )}
+            {(delivery.photo_match === null || delivery.photo_match === undefined) && (
+              <p className="muted" style={{ marginTop: "0.35rem" }}>
+                AI verification was unavailable when this was submitted.
+              </p>
+            )}
+            {delivery.photo_verification_reasoning && (
+              <p className="muted" style={{ marginTop: "0.35rem" }}>
+                {delivery.photo_verification_reasoning}
+              </p>
+            )}
+          </div>
         )}
       </div>
 

@@ -52,6 +52,9 @@ class Delivery(Base):
     receiver_confirmed: Mapped[bool] = mapped_column(
         Boolean, nullable=False, server_default="false"
     )
+    receiver_photo_path: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    photo_match: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
+    photo_verification_reasoning: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )
