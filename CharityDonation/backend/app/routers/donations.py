@@ -14,7 +14,8 @@ from app.schemas.donation import (
     DonationResponse,
     MatchPreviewItem,
 )
-from app.services import donation_service
+from app.schemas.route import RouteResponse
+from app.services import donation_service, route_service
 
 router = APIRouter(prefix="/donations", tags=["donations"])
 
@@ -68,3 +69,12 @@ def get_donation(
     current_user: User = Depends(get_current_user),
 ):
     return donation_service.get_donation(db, current_user, donation_id)
+
+
+@router.get("/{donation_id}/route", response_model=RouteResponse)
+def get_donation_route(
+    donation_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    return route_service.get_pickup_route(db, current_user, donation_id)

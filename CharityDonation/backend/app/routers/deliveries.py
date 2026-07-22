@@ -6,7 +6,8 @@ from sqlalchemy.orm import Session
 from app.deps import get_current_user, get_db
 from app.models.user import User
 from app.schemas.delivery import DeliveryDetailResponse, DeliverySummary, MatchCardResponse
-from app.services import delivery_service
+from app.schemas.route import RouteResponse
+from app.services import delivery_service, route_service
 
 router = APIRouter(prefix="/deliveries", tags=["deliveries"])
 
@@ -26,6 +27,15 @@ def get_delivery(
     current_user: User = Depends(get_current_user),
 ):
     return delivery_service.get_delivery_detail(db, current_user, delivery_id)
+
+
+@router.get("/{delivery_id}/route", response_model=RouteResponse)
+def get_delivery_route(
+    delivery_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    return route_service.get_delivery_route(db, current_user, delivery_id)
 
 
 @router.post("/{delivery_id}/confirm-volunteer", response_model=DeliverySummary)

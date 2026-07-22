@@ -2,8 +2,10 @@ import { useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { confirmReceiver, confirmVolunteer, getDelivery } from "../api/deliveries";
+import { getDeliveryRoute } from "../api/routes";
 import { useAuth } from "../hooks/useAuth";
 import { ApiError } from "../api/client";
+import { RouteMap } from "../components/RouteMap";
 
 export default function DeliveryDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -15,6 +17,13 @@ export default function DeliveryDetailPage() {
     queryKey: ["delivery", id],
     queryFn: () => getDelivery(id!),
     enabled: !!id,
+  });
+
+  const { data: route } = useQuery({
+    queryKey: ["delivery-route", id],
+    queryFn: () => getDeliveryRoute(id!),
+    enabled: !!id,
+    retry: false,
   });
 
   const invalidate = () => {
@@ -79,6 +88,15 @@ export default function DeliveryDetailPage() {
           </button>
         )}
       </div>
+
+      {route && (
+        <div className="card">
+          <strong>Route: warehouse &rarr; receiver</strong>
+          <div style={{ marginTop: "0.5rem" }}>
+            <RouteMap route={route} />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

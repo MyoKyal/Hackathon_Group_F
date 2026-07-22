@@ -8,9 +8,37 @@ import {
   declinePickup,
   listAssignments,
 } from "../api/volunteers";
+import { getDeliveryRoute, getPickupRoute } from "../api/routes";
 import { ApiError } from "../api/client";
 import { useState } from "react";
 import type { Assignment } from "../types";
+import { RouteMap } from "../components/RouteMap";
+
+function RouteToggle({ assignment }: { assignment: Assignment }) {
+  const [expanded, setExpanded] = useState(false);
+
+  const { data: route, isFetching } = useQuery({
+    queryKey: ["route", assignment.leg, assignment.id],
+    queryFn: () =>
+      assignment.leg === "pickup" ? getPickupRoute(assignment.id) : getDeliveryRoute(assignment.id),
+    enabled: expanded,
+    retry: false,
+  });
+
+  return (
+    <div style={{ marginTop: "0.5rem" }}>
+      <button className="secondary" onClick={() => setExpanded((e) => !e)}>
+        {expanded ? "Hide route" : "View route"}
+      </button>
+      {expanded && isFetching && <p className="muted">Loading route...</p>}
+      {expanded && route && (
+        <div style={{ marginTop: "0.5rem" }}>
+          <RouteMap route={route} height={260} />
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function VolunteerDashboardPage() {
   const queryClient = useQueryClient();
@@ -107,6 +135,7 @@ export default function VolunteerDashboardPage() {
               </>
             )}
           </div>
+          <RouteToggle assignment={a} />
         </div>
       ))}
 
@@ -132,6 +161,7 @@ export default function VolunteerDashboardPage() {
               </Link>
             </p>
           )}
+          <RouteToggle assignment={a} />
         </div>
       ))}
 

@@ -189,3 +189,20 @@ export interface MatchCard {
   request_quantity_needed?: number | null;
   receiver_name: string;
 }
+
+export interface RoutePoint {
+  lat: number;
+  lng: number;
+  label: string;
+}
+
+export interface RouteInfo {
+  leg: "pickup" | "delivery";
+  volunteer_id?: string | null;
+  volunteer_name?: string | null;
+  waypoints: RoutePoint[];
+  geometry: [number, number][] | null;
+  distance_km?: number | null;
+  duration_min?: number | null;
+  routed: boolean;
+}
