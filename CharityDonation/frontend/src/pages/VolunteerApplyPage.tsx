@@ -5,6 +5,7 @@ import { applyVolunteer } from "../api/volunteers";
 import { ApiError } from "../api/client";
 import { LocationPicker } from "../components/forms/LocationPicker";
 import type { Location, TransportationType, VolunteerApplyPayload } from "../types";
+import { HeartHandshake, Car, Route, MapPin, Clock, List, Loader2 } from "lucide-react";
 
 const TRANSPORT_OPTIONS: { value: TransportationType; label: string }[] = [
   { value: "walking", label: "Walking (up to 10 kg)" },
@@ -107,127 +108,194 @@ export default function VolunteerApplyPage() {
     form.max_travel_distance_km > 0;
 
   return (
-    <div className="container">
-      <h1>Become a Volunteer</h1>
-      {status === "approved" && <p>You're already an approved volunteer.</p>}
-      {status === "pending" && <p className="muted">Your application is pending approval.</p>}
-      {status === "rejected" && <p className="error">Your application was rejected.</p>}
-      {(status === "none" || (status === "rejected" && !applied)) && !applied && (
-        <>
-          <p className="muted">
-            Apply to become a volunteer to help transport donations to receivers.
-          </p>
+    <div className="auth-page">
+      <div className="auth-hero" style={{ padding: '0', background: 'transparent' }}>
+        <div className="auth-form-container" style={{ width: '100%', maxWidth: '800px', margin: '0 auto', padding: '2rem 1rem' }}>
+          <div className="auth-card" style={{ maxWidth: '100%' }}>
+            
+            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1rem' }}>
+              <HeartHandshake size={48} color="var(--primary)" />
+            </div>
+            
+            <h1 style={{ textAlign: 'center' }}>Become a Volunteer</h1>
+            <p className="auth-subtitle" style={{ textAlign: 'center', maxWidth: '600px', margin: '0 auto 2rem auto' }}>
+              Join our network of community heroes. Help transport donations to those who need them most.
+            </p>
 
-          <label>
-            Transportation type
-            <select
-              value={form.transportation_type}
-              onChange={(e) =>
-                setForm({ ...form, transportation_type: e.target.value as TransportationType })
-              }
-            >
-              {TRANSPORT_OPTIONS.map((opt) => (
-                <option key={opt.value} value={opt.value}>
-                  {opt.label}
-                </option>
-              ))}
-            </select>
-          </label>
+            {status === "approved" && <div className="error" style={{ background: '#dcfce7', color: '#166534', borderColor: '#bbf7d0', marginBottom: '2rem' }}>You're already an approved volunteer!</div>}
+            {status === "pending" && <div className="error" style={{ background: '#fef3c7', color: '#92400e', borderColor: '#fde68a', marginBottom: '2rem' }}>Your application is pending approval.</div>}
+            {status === "rejected" && <div className="error" style={{ marginBottom: '2rem' }}>Your application was rejected.</div>}
+            
+            {(status === "none" || (status === "rejected" && !applied)) && !applied && (
+              <form onSubmit={(e) => e.preventDefault()}>
+                
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.5rem' }}>
+                  <label>
+                    Transportation type
+                    <div className="input-wrapper">
+                      <Car className="input-icon" size={20} />
+                      <select
+                        value={form.transportation_type}
+                        onChange={(e) =>
+                          setForm({ ...form, transportation_type: e.target.value as TransportationType })
+                        }
+                      >
+                        {TRANSPORT_OPTIONS.map((opt) => (
+                          <option key={opt.value} value={opt.value}>
+                            {opt.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </label>
 
-          <label>
-            Maximum travel distance (km)
-            <input
-              type="number"
-              min={1}
-              required
-              value={form.max_travel_distance_km}
-              onChange={(e) =>
-                setForm({ ...form, max_travel_distance_km: parseFloat(e.target.value) })
-              }
-            />
-          </label>
+                  <label>
+                    Maximum travel distance (km)
+                    <div className="input-wrapper">
+                      <Route className="input-icon" size={20} />
+                      <input
+                        type="number"
+                        min={1}
+                        required
+                        value={form.max_travel_distance_km}
+                        onChange={(e) =>
+                          setForm({ ...form, max_travel_distance_km: parseFloat(e.target.value) })
+                        }
+                      />
+                    </div>
+                  </label>
+                </div>
 
-          <label>
-            Township
-            <input
-              required
-              value={form.township}
-              onChange={(e) => setForm({ ...form, township: e.target.value })}
-            />
-          </label>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.5rem' }}>
+                  <label>
+                    Township
+                    <div className="input-wrapper">
+                      <MapPin className="input-icon" size={20} />
+                      <input
+                        required
+                        placeholder="E.g., Downtown"
+                        value={form.township}
+                        onChange={(e) => setForm({ ...form, township: e.target.value })}
+                      />
+                    </div>
+                  </label>
 
-          <label>
-            Full address
-            <input
-              required
-              value={form.full_address}
-              onChange={(e) => setForm({ ...form, full_address: e.target.value })}
-            />
-          </label>
+                  <label>
+                    Full address
+                    <div className="input-wrapper">
+                      <MapPin className="input-icon" size={20} />
+                      <input
+                        required
+                        placeholder="123 Main Street"
+                        value={form.full_address}
+                        onChange={(e) => setForm({ ...form, full_address: e.target.value })}
+                      />
+                    </div>
+                  </label>
+                </div>
 
-          <fieldset>
-            <legend>Available days</legend>
-            {DAYS.map((day) => (
-              <label key={day} style={{ flexDirection: "row", alignItems: "center" }}>
-                <input
-                  type="checkbox"
-                  checked={form.available_days.includes(day)}
-                  onChange={() => toggleDay(day)}
-                />
-                {day}
-              </label>
-            ))}
-          </fieldset>
+                <fieldset style={{ border: 'none', padding: 0, margin: '1rem 0' }}>
+                  <legend style={{ fontWeight: 600, color: '#334155', marginBottom: '0.5rem' }}>Available days</legend>
+                  <div className="pill-grid">
+                    {DAYS.map((day) => (
+                      <label key={day} className="pill-label">
+                        <input
+                          type="checkbox"
+                          checked={form.available_days.includes(day)}
+                          onChange={() => toggleDay(day)}
+                        />
+                        <span>{day}</span>
+                      </label>
+                    ))}
+                  </div>
+                </fieldset>
 
-          <label>
-            Available from
-            <input
-              type="time"
-              required
-              value={form.available_start_time}
-              onChange={(e) => setForm({ ...form, available_start_time: e.target.value })}
-            />
-          </label>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+                  <label>
+                    Available from
+                    <div className="input-wrapper">
+                      <Clock className="input-icon" size={20} />
+                      <input
+                        type="time"
+                        required
+                        value={form.available_start_time}
+                        onChange={(e) => setForm({ ...form, available_start_time: e.target.value })}
+                      />
+                    </div>
+                  </label>
 
-          <label>
-            Available until
-            <input
-              type="time"
-              required
-              value={form.available_end_time}
-              onChange={(e) => setForm({ ...form, available_end_time: e.target.value })}
-            />
-          </label>
+                  <label>
+                    Available until
+                    <div className="input-wrapper">
+                      <Clock className="input-icon" size={20} />
+                      <input
+                        type="time"
+                        required
+                        value={form.available_end_time}
+                        onChange={(e) => setForm({ ...form, available_end_time: e.target.value })}
+                      />
+                    </div>
+                  </label>
+                </div>
 
-          <fieldset>
-            <legend>Preferred donation categories (optional)</legend>
-            {CATEGORY_OPTIONS.map((category) => (
-              <label key={category} style={{ flexDirection: "row", alignItems: "center" }}>
-                <input
-                  type="checkbox"
-                  checked={form.preferred_categories.includes(category)}
-                  onChange={() => toggleCategory(category)}
-                />
-                {category}
-              </label>
-            ))}
-          </fieldset>
+                <fieldset style={{ border: 'none', padding: 0, margin: '1rem 0' }}>
+                  <legend style={{ fontWeight: 600, color: '#334155', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <List size={18} /> Preferred donation categories (optional)
+                  </legend>
+                  <div className="pill-grid-auto">
+                    {CATEGORY_OPTIONS.map((category) => (
+                      <label key={category} className="pill-label">
+                        <input
+                          type="checkbox"
+                          checked={form.preferred_categories.includes(category)}
+                          onChange={() => toggleCategory(category)}
+                        />
+                        <span>{category}</span>
+                      </label>
+                    ))}
+                  </div>
+                </fieldset>
 
-          <LocationPicker
-            value={form.location}
-            onChange={(location) => setForm({ ...form, location })}
-          />
+                <div style={{ margin: '1rem 0' }}>
+                  <span style={{ fontWeight: 600, color: '#334155', marginBottom: '0.5rem', display: 'block' }}>Base Location</span>
+                  <div style={{ borderRadius: '16px', overflow: 'hidden', border: '1px solid var(--border)' }}>
+                    <LocationPicker
+                      value={form.location}
+                      onChange={(location) => setForm({ ...form, location })}
+                    />
+                  </div>
+                </div>
 
-          {error && <div className="error">{error}</div>}
-          <button
-            onClick={() => mutation.mutate()}
-            disabled={mutation.isPending || !canSubmit}
-          >
-            {mutation.isPending ? "Applying..." : "Apply now"}
-          </button>
-        </>
-      )}
-      {applied && <p className="muted">Application submitted — awaiting approval.</p>}
+                {error && <div className="error">{error}</div>}
+                
+                <button
+                  onClick={() => mutation.mutate()}
+                  disabled={mutation.isPending || !canSubmit}
+                  style={{ width: '100%', marginTop: '1.5rem', padding: '1rem', fontSize: '1.1rem' }}
+                >
+                  {mutation.isPending ? (
+                    <>
+                      <Loader2 size={24} className="animate-spin" style={{ animation: 'spin 1s linear infinite' }} />
+                      Submitting Application...
+                    </>
+                  ) : (
+                    "Submit Application"
+                  )}
+                </button>
+              </form>
+            )}
+            
+            {applied && (
+              <div style={{ textAlign: 'center', marginTop: '2rem' }}>
+                <HeartHandshake size={64} color="var(--primary)" style={{ margin: '0 auto 1rem auto' }} />
+                <h2 style={{ color: '#0f172a' }}>Application Submitted!</h2>
+                <p className="muted" style={{ fontSize: '1.1rem' }}>Thank you for volunteering. We are reviewing your application and will notify you once approved.</p>
+              </div>
+            )}
+            
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

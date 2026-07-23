@@ -28,8 +28,8 @@ export default function App() {
           <Route path="/" element={<HomePage />} />
           <Route path="/donate" element={<DonatePage />} />
           <Route path="/request" element={<RequestPage />} />
-          <Route path="/my-donations" element={<MyDonationsPage />} />
-          <Route path="/my-requests" element={<MyRequestsPage />} />
+          <Route path="/donations/me" element={<MyDonationsPage />} />
+          <Route path="/requests/me" element={<MyRequestsPage />} />
           <Route path="/donations/all" element={<BrowseDonationsPage />} />
           <Route path="/requests/all" element={<BrowseRequestsPage />} />
           <Route path="/volunteer/apply" element={<VolunteerApplyPage />} />
