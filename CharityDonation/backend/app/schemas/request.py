@@ -29,6 +29,7 @@ class RequestResponse(BaseModel):
     item_category: ItemCategory
     description: str | None
     quantity_needed: int
+    quantity_fulfilled: int
     lat: float
     lng: float
     status: RequestStatus
