@@ -17,6 +17,17 @@ TEST_DATABASE_URL = os.getenv(
     "postgresql://postgres:password@localhost:5432/charity_donation_test",
 )
 
+# Guard: the engine fixture calls Base.metadata.drop_all() at teardown, so it
+# MUST only ever point at a disposable test database. Refuse to run against a
+# URL that doesn't clearly name one — this prevents pointing the suite at a real
+# database and wiping it. Override intentionally by including "test" in the name.
+if "test" not in TEST_DATABASE_URL.rsplit("/", 1)[-1].lower():
+    raise RuntimeError(
+        "TEST_DATABASE_URL must point at a database whose name contains 'test' "
+        "(tests DROP ALL TABLES on teardown). Refusing to run against "
+        f"{TEST_DATABASE_URL.rsplit('/', 1)[-1]!r} to avoid data loss."
+    )
+
 
 @pytest.fixture(scope="session")
 def engine():

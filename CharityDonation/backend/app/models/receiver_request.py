@@ -37,6 +37,7 @@ class ReceiverRequest(Base):
     )
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     quantity_needed: Mapped[int] = mapped_column(Integer, nullable=False, server_default="1")
+    quantity_fulfilled: Mapped[int] = mapped_column(Integer, nullable=False, server_default="0")
     location: Mapped[object] = mapped_column(
         Geography(geometry_type="POINT", srid=4326, spatial_index=False), nullable=False
     )

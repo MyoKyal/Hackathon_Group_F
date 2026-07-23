@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from datetime import datetime
 from uuid import UUID
 
 from geoalchemy2.functions import ST_Distance
@@ -70,7 +71,10 @@ def score_open_requests(
             ST_Distance(ReceiverRequest.location, pickup_point).label("distance_meters"),
         )
         .join(User, User.id == ReceiverRequest.requester_id)
-        .where(ReceiverRequest.status == RequestStatus.open)
+        .where(
+            ReceiverRequest.status.in_([RequestStatus.open, RequestStatus.matched]),
+            ReceiverRequest.quantity_fulfilled < ReceiverRequest.quantity_needed,
+        )
     )
     if exclude_user_id is not None:
         stmt = stmt.where(ReceiverRequest.requester_id != exclude_user_id)
@@ -82,6 +86,7 @@ def score_open_requests(
         kw = keyword_score(item_name, description, request.item_name, request.description)
         if not passes_hard_filter(cat, kw):
             continue
+        quantity_remaining = request.quantity_needed - request.quantity_fulfilled
         score = compute_donor_receiver_score(
             item_category,
             item_name,
@@ -90,7 +95,7 @@ def score_open_requests(
             request.item_category,
             request.item_name,
             request.description,
-            request.quantity_needed,
+            quantity_remaining,
             float(distance_meters),
         )
         scored.append(
@@ -98,7 +103,7 @@ def score_open_requests(
                 request_id=request.id,
                 requester_name=requester_name,
                 item_name=request.item_name,
-                quantity_needed=request.quantity_needed,
+                quantity_needed=quantity_remaining,
                 distance_meters=float(distance_meters),
                 score=score,
             )
@@ -295,6 +300,10 @@ def _rank_volunteers(
             donation_weight_kg,
             volunteer.max_travel_distance_km,
             total_travel_km,
+            volunteer.available_days,
+            volunteer.available_start_time,
+            volunteer.available_end_time,
+            datetime.now(),
         ):
             continue
 

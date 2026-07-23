@@ -1,22 +1,35 @@
 import { useEffect } from "react";
 import L from "leaflet";
-import { MapContainer, Marker, Polyline, Popup, TileLayer, useMap } from "react-leaflet";
-import markerIcon2x from "leaflet/dist/images/marker-icon-2x.png";
-import markerIcon from "leaflet/dist/images/marker-icon.png";
-import markerShadow from "leaflet/dist/images/marker-shadow.png";
+import { MapContainer, Marker, Polyline, TileLayer, Tooltip, useMap } from "react-leaflet";
 import type { RouteInfo } from "../types";
 import { Navigation, Clock } from "lucide-react";
-
-delete (L.Icon.Default.prototype as unknown as { _getIconUrl?: unknown })._getIconUrl;
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: markerIcon2x,
-  iconUrl: markerIcon,
-  shadowUrl: markerShadow,
-});
 
 interface Props {
   route: RouteInfo;
   height?: number;
+}
+
+const ROLE_STYLES: Record<string, { color: string; tag: string }> = {
+  volunteer: { color: "#16a34a", tag: "Volunteer" },
+  pickup: { color: "#f97316", tag: "Pickup" },
+  warehouse: { color: "#2563eb", tag: "Warehouse" },
+  receiver: { color: "#9333ea", tag: "Receiver" },
+};
+
+function classifyWaypoint(label: string): { color: string; tag: string } {
+  if (label.startsWith("Volunteer")) return ROLE_STYLES.volunteer;
+  if (label.startsWith("Pickup")) return ROLE_STYLES.pickup;
+  if (label.startsWith("Warehouse")) return ROLE_STYLES.warehouse;
+  return ROLE_STYLES.receiver;
+}
+
+function makeDivIcon(color: string): L.DivIcon {
+  return L.divIcon({
+    className: "role-marker",
+    html: `<span class="role-marker-pin" style="background:${color}"></span>`,
+    iconSize: [16, 16],
+    iconAnchor: [8, 8],
+  });
 }
 
 function FitToWaypoints({ positions }: { positions: [number, number][] }) {
@@ -52,11 +65,18 @@ export function RouteMap({ route, height = 320 }: Props) {
               dashArray: route.routed ? undefined : "6 8",
             }}
           />
-          {route.waypoints.map((w, i) => (
-            <Marker key={i} position={[w.lat, w.lng]}>
-              <Popup>{w.label}</Popup>
-            </Marker>
-          ))}
+          {route.waypoints.map((w, i) => {
+            const { color, tag } = classifyWaypoint(w.label);
+            const detail = w.label.includes(": ") ? w.label.split(": ")[1] : null;
+            return (
+              <Marker key={i} position={[w.lat, w.lng]} icon={makeDivIcon(color)}>
+                <Tooltip permanent direction="top" offset={[0, -10]} className="role-marker-tooltip">
+                  <strong>{tag}</strong>
+                  {detail && <div>{detail}</div>}
+                </Tooltip>
+              </Marker>
+            );
+          })}
           <FitToWaypoints positions={waypointPositions} />
         </MapContainer>
       </div>
@@ -75,7 +95,7 @@ export function RouteMap({ route, height = 320 }: Props) {
           </>
         ) : (
           <span className="muted" style={{ fontWeight: 'normal' }}>
-            Straight-line preview
+            Showing a straight-line preview — street routing is unavailable.
           </span>
         )}
       </div>

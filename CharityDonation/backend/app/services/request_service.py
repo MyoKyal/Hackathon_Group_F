@@ -20,6 +20,7 @@ def _request_response(db: Session, request: ReceiverRequest) -> RequestResponse:
         item_category=request.item_category,
         description=request.description,
         quantity_needed=request.quantity_needed,
+        quantity_fulfilled=request.quantity_fulfilled,
         lat=lat,
         lng=lng,
         status=request.status,

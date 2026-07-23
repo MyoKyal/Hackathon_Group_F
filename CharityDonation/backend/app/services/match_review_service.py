@@ -74,7 +74,7 @@ def approve_proposal(db: Session, proposal_id: UUID) -> MatchProposalResponse:
     )
     if proposal.receiver_request_id:
         request = db.get(ReceiverRequest, proposal.receiver_request_id)
-        if request is not None and request.status != RequestStatus.open:
+        if request is not None and request.quantity_fulfilled >= request.quantity_needed:
             raise ConflictError("Receiver request is no longer available to match")
         if request is not None:
             request.status = RequestStatus.matched

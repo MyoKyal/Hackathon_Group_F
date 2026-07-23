@@ -195,8 +195,13 @@ def _maybe_complete_delivery(db: Session, delivery: Delivery) -> None:
 
     if delivery.receiver_request_id:
         request = db.get(ReceiverRequest, delivery.receiver_request_id)
-        if request:
-            request.status = RequestStatus.fulfilled
+        if request and donation:
+            request.quantity_fulfilled += donation.quantity
+            request.status = (
+                RequestStatus.fulfilled
+                if request.quantity_fulfilled >= request.quantity_needed
+                else RequestStatus.open
+            )
 
     if delivery.volunteer_id:
         volunteer = db.get(User, delivery.volunteer_id)
@@ -384,7 +389,15 @@ def list_pickup_assignments(db: Session, volunteer: User) -> list[AssignmentResp
 
 
 def list_delivery_assignments(db: Session, volunteer: User) -> list[AssignmentResponse]:
-    deliveries = db.scalars(select(Delivery)).all()
+    # Only deliveries this volunteer could be part of: ones already assigned to
+    # them, or ones still awaiting a volunteer (candidates for an offer). Skips
+    # completed deliveries and those assigned to other volunteers.
+    deliveries = db.scalars(
+        select(Delivery).where(
+            (Delivery.volunteer_id == volunteer.id)
+            | (Delivery.status == DeliveryStatus.awaiting_volunteer)
+        )
+    ).all()
     results: list[AssignmentResponse] = []
 
     for delivery in deliveries:

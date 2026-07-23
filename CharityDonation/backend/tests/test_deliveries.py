@@ -1,11 +1,23 @@
+from io import BytesIO
+
 from sqlalchemy import select
+from starlette.datastructures import Headers, UploadFile
 
 from app.core.geo import make_point
 from app.models.delivery import Delivery, DeliveryStatus
 from app.models.donation import Donation, DonationStatus
+from app.models.receiver_request import ReceiverRequest, RequestStatus
 from app.models.user import User, VolunteerStatus
 from app.models.warehouse import Warehouse
+from app.services import delivery_service
 from app.services.delivery_service import confirm_receiver, confirm_volunteer
+
+
+def _fake_photo() -> UploadFile:
+    return UploadFile(
+        file=BytesIO(b"fake-image-bytes"),
+        headers=Headers({"content-type": "image/jpeg"}),
+    )
 
 
 def _create_user(db, email: str, name: str) -> User:
@@ -66,10 +78,14 @@ def test_only_volunteer_confirmed_stays_in_transit(db):
     assert delivery.status == DeliveryStatus.in_transit
 
 
-def test_only_receiver_confirmed_stays_in_transit(db):
+def test_only_receiver_confirmed_stays_in_transit(db, monkeypatch):
     _, receiver, volunteer, _, delivery = _create_delivery_setup(db)
 
-    confirm_receiver(db, receiver, delivery.id)
+    monkeypatch.setattr(
+        delivery_service.photo_verification_service, "verify_photo",
+        lambda *a, **k: (None, None),
+    )
+    confirm_receiver(db, receiver, delivery.id, _fake_photo())
     db.refresh(delivery)
 
     assert delivery.receiver_confirmed is True
@@ -77,11 +93,15 @@ def test_only_receiver_confirmed_stays_in_transit(db):
     assert delivery.status == DeliveryStatus.in_transit
 
 
-def test_both_confirmations_complete_delivery(db):
+def test_both_confirmations_complete_delivery(db, monkeypatch):
     _, receiver, volunteer, donation, delivery = _create_delivery_setup(db)
 
+    monkeypatch.setattr(
+        delivery_service.photo_verification_service, "verify_photo",
+        lambda *a, **k: (None, None),
+    )
     confirm_volunteer(db, volunteer, delivery.id)
-    confirm_receiver(db, receiver, delivery.id)
+    confirm_receiver(db, receiver, delivery.id, _fake_photo())
     db.refresh(delivery)
     db.refresh(donation)
 
@@ -90,3 +110,107 @@ def test_both_confirmations_complete_delivery(db):
     assert delivery.receiver_confirmed is True
     assert delivery.completed_at is not None
     assert donation.status == DonationStatus.completed
+
+
+def test_partial_donation_keeps_request_open_for_more(db, monkeypatch):
+    donor = _create_user(db, "donor_partial@example.com", "Donor Partial")
+    receiver = _create_user(db, "receiver_partial@example.com", "Receiver Partial")
+    volunteer = _create_user(db, "volunteer_partial@example.com", "Volunteer Partial")
+    warehouse = db.scalar(select(Warehouse).limit(1))
+
+    request = ReceiverRequest(
+        requester_id=receiver.id,
+        item_name="Rice",
+        item_category="food",
+        quantity_needed=20,
+        location=make_point(16.8, 96.15),
+        status=RequestStatus.matched,
+    )
+    db.add(request)
+    db.flush()
+
+    donation = Donation(
+        donor_id=donor.id,
+        item_name="Rice",
+        item_category="food",
+        quantity=10,
+        pickup_location=make_point(16.8, 96.15),
+        status=DonationStatus.in_transit,
+        warehouse_id=warehouse.id,
+    )
+    db.add(donation)
+    db.flush()
+
+    delivery = Delivery(
+        donation_id=donation.id,
+        receiver_request_id=request.id,
+        receiver_id=receiver.id,
+        volunteer_id=volunteer.id,
+        status=DeliveryStatus.in_transit,
+    )
+    db.add(delivery)
+    db.commit()
+    db.refresh(delivery)
+
+    monkeypatch.setattr(
+        delivery_service.photo_verification_service, "verify_photo",
+        lambda *a, **k: (None, None),
+    )
+    confirm_volunteer(db, volunteer, delivery.id)
+    confirm_receiver(db, receiver, delivery.id, _fake_photo())
+    db.refresh(request)
+
+    assert request.quantity_fulfilled == 10
+    assert request.status == RequestStatus.open
+
+
+def test_full_donation_marks_request_fulfilled(db, monkeypatch):
+    donor = _create_user(db, "donor_full@example.com", "Donor Full")
+    receiver = _create_user(db, "receiver_full@example.com", "Receiver Full")
+    volunteer = _create_user(db, "volunteer_full@example.com", "Volunteer Full")
+    warehouse = db.scalar(select(Warehouse).limit(1))
+
+    request = ReceiverRequest(
+        requester_id=receiver.id,
+        item_name="Rice",
+        item_category="food",
+        quantity_needed=10,
+        location=make_point(16.8, 96.15),
+        status=RequestStatus.matched,
+    )
+    db.add(request)
+    db.flush()
+
+    donation = Donation(
+        donor_id=donor.id,
+        item_name="Rice",
+        item_category="food",
+        quantity=10,
+        pickup_location=make_point(16.8, 96.15),
+        status=DonationStatus.in_transit,
+        warehouse_id=warehouse.id,
+    )
+    db.add(donation)
+    db.flush()
+
+    delivery = Delivery(
+        donation_id=donation.id,
+        receiver_request_id=request.id,
+        receiver_id=receiver.id,
+        volunteer_id=volunteer.id,
+        status=DeliveryStatus.in_transit,
+    )
+    db.add(delivery)
+    db.commit()
+    db.refresh(delivery)
+
+    monkeypatch.setattr(
+        delivery_service.photo_verification_service, "verify_photo",
+        lambda *a, **k: (None, None),
+    )
+    confirm_volunteer(db, volunteer, delivery.id)
+    confirm_receiver(db, receiver, delivery.id, _fake_photo())
+    db.refresh(request)
+
+    assert request.quantity_fulfilled == 10
+    assert request.status == RequestStatus.fulfilled

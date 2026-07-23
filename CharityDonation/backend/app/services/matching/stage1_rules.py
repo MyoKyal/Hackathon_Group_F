@@ -1,5 +1,6 @@
 import re
 from dataclasses import dataclass
+from datetime import datetime, time
 from uuid import UUID
 
 # ponytail: small hand-picked stopword list, not a full NLP stopword corpus —
@@ -113,18 +114,37 @@ TRANSPORT_SCORE: dict[str, float] = {
 }
 
 
+def is_within_availability(
+    available_days: list[str] | None,
+    available_start_time: time | None,
+    available_end_time: time | None,
+    now: datetime,
+) -> bool:
+    if available_days is None or available_start_time is None or available_end_time is None:
+        return True
+    if now.strftime("%A").lower() not in {d.lower() for d in available_days}:
+        return False
+    return available_start_time <= now.time() <= available_end_time
+
+
 def passes_volunteer_mandatory(
     is_available: bool,
     max_capacity_kg: float | None,
     donation_weight_kg: float,
     max_travel_km: float,
     total_travel_km: float,
+    available_days: list[str] | None,
+    available_start_time: time | None,
+    available_end_time: time | None,
+    now: datetime,
 ) -> bool:
     if not is_available:
         return False
     if max_capacity_kg is not None and donation_weight_kg > max_capacity_kg:
         return False
     if total_travel_km > max_travel_km:
+        return False
+    if not is_within_availability(available_days, available_start_time, available_end_time, now):
         return False
     return True
 
