@@ -141,6 +141,12 @@ def test_is_within_availability_exact_start_and_end_boundary_are_inclusive():
     assert is_within_availability(["tuesday"], time(10, 0), time(10, 0), NOW) is True
 
 
+def test_is_within_availability_accepts_frontend_3letter_day_codes():
+    # frontend VolunteerApplyPage stores days as "mon", "tue", etc.
+    assert is_within_availability(["tue"], time(9, 0), time(17, 0), NOW) is True
+    assert is_within_availability(["wed"], time(9, 0), time(17, 0), NOW) is False
+
+
 # --- Boundary-value edge cases ---
 
 

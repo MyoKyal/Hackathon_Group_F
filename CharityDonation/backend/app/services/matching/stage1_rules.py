@@ -122,7 +122,11 @@ def is_within_availability(
 ) -> bool:
     if available_days is None or available_start_time is None or available_end_time is None:
         return True
-    if now.strftime("%A").lower() not in {d.lower() for d in available_days}:
+    today_full = now.strftime("%A").lower()
+    # frontend stores 3-letter day codes ("mon"); accept both forms.
+    today_abbrev = today_full[:3]
+    days = {d.lower() for d in available_days}
+    if today_full not in days and today_abbrev not in days:
         return False
     return available_start_time <= now.time() <= available_end_time
 
