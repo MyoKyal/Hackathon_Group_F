@@ -131,3 +131,17 @@ header nav {
   display: flex;
   gap: 0.5rem;
 }
+
+.role-marker-pin {
+  display: block;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid white;
+  box-shadow: 0 0 2px rgba(0, 0, 0, 0.5);
+}
+
+.role-marker-tooltip {
+  font-size: 0.75rem;
+  white-space: nowrap;
+}
