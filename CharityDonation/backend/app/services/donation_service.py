@@ -18,7 +18,9 @@ from app.schemas.donation import (
     DonationResponse,
     MatchPreviewItem,
 )
+from app.schemas.volunteer import VolunteerInfo
 from app.schemas.warehouse import WarehouseSummary
+from app.services.matching import orchestrator
 from app.services.matching.orchestrator import (
     create_targeted_delivery,
     find_nearest_warehouse,
@@ -31,6 +33,13 @@ from app.services.matching.orchestrator import (
 def _warehouse_summary(db: Session, warehouse: Warehouse) -> WarehouseSummary:
     lat, lng = extract_lat_lng(db, warehouse.location)
     return WarehouseSummary(id=warehouse.id, name=warehouse.name, lat=lat, lng=lng)
+
+
+def _volunteer_info(resolved: tuple[User, str] | None) -> VolunteerInfo | None:
+    if resolved is None:
+        return None
+    volunteer, status = resolved
+    return VolunteerInfo(id=volunteer.id, full_name=volunteer.full_name, status=status)
 
 
 def _donation_response(db: Session, donation: Donation) -> DonationResponse:
@@ -51,6 +60,7 @@ def _donation_response(db: Session, donation: Donation) -> DonationResponse:
         warehouse=_warehouse_summary(db, warehouse),
         pickup_status=donation.pickup_status,
         pickup_volunteer_id=donation.pickup_volunteer_id,
+        pickup_volunteer=_volunteer_info(orchestrator.resolve_pickup_volunteer(db, donation)),
         pickup_stage1_score=donation.pickup_stage1_score,
         pickup_gemini_reasoning=donation.pickup_gemini_reasoning,
         pickup_volunteer_confirmed=donation.pickup_volunteer_confirmed,
@@ -59,8 +69,10 @@ def _donation_response(db: Session, donation: Donation) -> DonationResponse:
     )
 
 
-def _delivery_summary(delivery: Delivery) -> DeliverySummary:
-    return DeliverySummary.model_validate(delivery)
+def _delivery_summary(db: Session, delivery: Delivery) -> DeliverySummary:
+    summary = DeliverySummary.model_validate(delivery)
+    summary.volunteer = _volunteer_info(orchestrator.resolve_delivery_volunteer(db, delivery))
+    return summary
 
 
 def create_donation(
@@ -99,17 +111,27 @@ def create_donation(
     response = _donation_response(db, donation)
     return DonationCreateResponse(
         **response.model_dump(),
-        delivery=_delivery_summary(delivery) if delivery else None,
+        delivery=_delivery_summary(db, delivery) if delivery else None,
     )
 
 
-def list_donations(db: Session, donor: User) -> list[DonationResponse]:
+def list_donations(db: Session, donor: User) -> list[DonationDetailResponse]:
     donations = db.scalars(
         select(Donation)
         .where(Donation.donor_id == donor.id)
         .order_by(Donation.created_at.desc())
     ).all()
-    return [_donation_response(db, d) for d in donations]
+    results = []
+    for donation in donations:
+        delivery = db.scalar(select(Delivery).where(Delivery.donation_id == donation.id))
+        response = _donation_response(db, donation)
+        results.append(
+            DonationDetailResponse(
+                **response.model_dump(),
+                delivery=_delivery_summary(db, delivery) if delivery else None,
+            )
+        )
+    return results
 
 
 def list_all_donations(db: Session) -> list[DonationBrowseItem]:
@@ -133,7 +155,7 @@ def get_donation(db: Session, donor: User, donation_id: UUID) -> DonationDetailR
     response = _donation_response(db, donation)
     return DonationDetailResponse(
         **response.model_dump(),
-        delivery=_delivery_summary(delivery) if delivery else None,
+        delivery=_delivery_summary(db, delivery) if delivery else None,
     )
 
 

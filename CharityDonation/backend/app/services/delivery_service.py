@@ -27,7 +27,7 @@ from app.schemas.delivery import (
     ReceiverSummary,
 )
 from app.schemas.donation import DonationResponse
-from app.schemas.volunteer import VolunteerApplyRequest
+from app.schemas.volunteer import VolunteerApplyRequest, VolunteerInfo
 from app.schemas.warehouse import WarehouseSummary
 from app.services import photo_verification_service
 from app.services.matching import orchestrator
@@ -39,6 +39,13 @@ from app.services.matching.orchestrator import (
 from app.services.matching.stage1_rules import TRANSPORT_CAPACITY_KG
 
 
+def _volunteer_info(resolved: tuple[User, str] | None) -> VolunteerInfo | None:
+    if resolved is None:
+        return None
+    volunteer, status = resolved
+    return VolunteerInfo(id=volunteer.id, full_name=volunteer.full_name, status=status)
+
+
 def _donation_summary(db: Session, donation: Donation) -> DonationSummary:
     lat, lng = extract_lat_lng(db, donation.pickup_location)
     return DonationSummary(
@@ -48,7 +55,14 @@ def _donation_summary(db: Session, donation: Donation) -> DonationSummary:
         quantity=donation.quantity,
         pickup_lat=lat,
         pickup_lng=lng,
+        pickup_volunteer=_volunteer_info(orchestrator.resolve_pickup_volunteer(db, donation)),
     )
+
+
+def _delivery_summary(db: Session, delivery: Delivery) -> DeliverySummary:
+    summary = DeliverySummary.model_validate(delivery)
+    summary.volunteer = _volunteer_info(orchestrator.resolve_delivery_volunteer(db, delivery))
+    return summary
 
 
 def _warehouse_summary(db: Session, warehouse_id: UUID) -> WarehouseSummary:
@@ -74,6 +88,7 @@ def _donation_response(db: Session, donation: Donation) -> DonationResponse:
         warehouse=_warehouse_summary(db, donation.warehouse_id),
         pickup_status=donation.pickup_status,
         pickup_volunteer_id=donation.pickup_volunteer_id,
+        pickup_volunteer=_volunteer_info(orchestrator.resolve_pickup_volunteer(db, donation)),
         pickup_stage1_score=donation.pickup_stage1_score,
         pickup_gemini_reasoning=donation.pickup_gemini_reasoning,
         pickup_volunteer_confirmed=donation.pickup_volunteer_confirmed,
@@ -123,19 +138,9 @@ def get_delivery_detail(db: Session, user: User, delivery_id: UUID) -> DeliveryD
     if donation is None or receiver is None:
         raise NotFoundError("Delivery not found")
 
+    summary = _delivery_summary(db, delivery)
     return DeliveryDetailResponse(
-        id=delivery.id,
-        donation_id=delivery.donation_id,
-        receiver_request_id=delivery.receiver_request_id,
-        receiver_id=delivery.receiver_id,
-        volunteer_id=delivery.volunteer_id,
-        stage1_score=delivery.stage1_score,
-        gemini_reasoning=delivery.gemini_reasoning,
-        status=delivery.status,
-        volunteer_confirmed=delivery.volunteer_confirmed,
-        receiver_confirmed=delivery.receiver_confirmed,
-        created_at=delivery.created_at,
-        completed_at=delivery.completed_at,
+        **summary.model_dump(),
         donation=_donation_summary(db, donation),
         receiver=ReceiverSummary(id=receiver.id, full_name=receiver.full_name),
     )
@@ -217,7 +222,7 @@ def confirm_volunteer(db: Session, user: User, delivery_id: UUID) -> DeliverySum
     _maybe_complete_delivery(db, delivery)
     db.commit()
     db.refresh(delivery)
-    return DeliverySummary.model_validate(delivery)
+    return _delivery_summary(db, delivery)
 
 
 RECEIVER_PHOTO_DIR = Path("uploads") / "receiver_photos"
@@ -273,7 +278,7 @@ def confirm_receiver(db: Session, user: User, delivery_id: UUID, photo: UploadFi
     _maybe_complete_delivery(db, delivery)
     db.commit()
     db.refresh(delivery)
-    return DeliverySummary.model_validate(delivery)
+    return _delivery_summary(db, delivery)
 
 
 def apply_volunteer(db: Session, user: User, payload: VolunteerApplyRequest) -> VolunteerStatus:
@@ -523,7 +528,7 @@ def accept_assignment(db: Session, volunteer: User, delivery_id: UUID) -> Delive
 
     db.commit()
     db.refresh(delivery)
-    return DeliverySummary.model_validate(delivery)
+    return _delivery_summary(db, delivery)
 
 
 def decline_assignment(db: Session, volunteer: User, delivery_id: UUID) -> DeliverySummary:
@@ -543,7 +548,7 @@ def decline_assignment(db: Session, volunteer: User, delivery_id: UUID) -> Deliv
     select_next_volunteer_for_delivery(db, delivery.id)
     db.commit()
     db.refresh(delivery)
-    return DeliverySummary.model_validate(delivery)
+    return _delivery_summary(db, delivery)
 
 
 def run_volunteer_matching(db: Session, delivery_id: UUID):

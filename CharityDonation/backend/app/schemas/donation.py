@@ -8,6 +8,7 @@ from app.models.donation import DonationStatus
 from app.models.enums import ItemCategory
 from app.schemas.common import Location
 from app.schemas.delivery import DeliverySummary
+from app.schemas.volunteer import VolunteerInfo
 from app.schemas.warehouse import WarehouseSummary
 
 
@@ -36,6 +37,7 @@ class DonationResponse(BaseModel):
     warehouse: WarehouseSummary
     pickup_status: DeliveryStatus
     pickup_volunteer_id: UUID | None
+    pickup_volunteer: VolunteerInfo | None = None
     pickup_stage1_score: float | None
     pickup_gemini_reasoning: str | None
     pickup_volunteer_confirmed: bool

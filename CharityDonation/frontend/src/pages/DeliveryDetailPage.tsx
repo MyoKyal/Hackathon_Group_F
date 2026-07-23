@@ -79,6 +79,18 @@ export default function DeliveryDetailPage() {
         <div>
           Status: <span className="badge">{delivery.status}</span>
         </div>
+        {delivery.donation.pickup_volunteer && (
+          <div className="muted">
+            Picked up from donor by: {delivery.donation.pickup_volunteer.full_name}{" "}
+            ({delivery.donation.pickup_volunteer.status === "accepted" ? "accepted" : "offered, not yet accepted"})
+          </div>
+        )}
+        {delivery.volunteer && (
+          <div className="muted">
+            Delivering to receiver: {delivery.volunteer.full_name}{" "}
+            ({delivery.volunteer.status === "accepted" ? "accepted" : "offered, not yet accepted"})
+          </div>
+        )}
         {delivery.gemini_reasoning && <p className="muted">{delivery.gemini_reasoning}</p>}
         <div className="row" style={{ marginTop: "0.5rem" }}>
           <span className="badge">

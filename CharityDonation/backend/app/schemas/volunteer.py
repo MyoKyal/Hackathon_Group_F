@@ -1,10 +1,18 @@
 from datetime import time
+from typing import Literal
+from uuid import UUID
 
 from pydantic import BaseModel, Field
 
 from app.models.user import TransportationType, VolunteerStatus
 from app.schemas.auth import UserResponse
 from app.schemas.common import Location
+
+
+class VolunteerInfo(BaseModel):
+    id: UUID
+    full_name: str
+    status: Literal["offered", "accepted"]
 
 
 class VolunteerApplyRequest(BaseModel):

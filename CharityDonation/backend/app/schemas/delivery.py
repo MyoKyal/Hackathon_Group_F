@@ -6,6 +6,7 @@ from pydantic import BaseModel
 
 from app.models.delivery import DeliveryStatus
 from app.models.enums import ItemCategory
+from app.schemas.volunteer import VolunteerInfo
 from app.schemas.warehouse import WarehouseSummary
 
 
@@ -15,6 +16,7 @@ class DeliverySummary(BaseModel):
     receiver_request_id: UUID | None
     receiver_id: UUID
     volunteer_id: UUID | None
+    volunteer: VolunteerInfo | None = None
     stage1_score: float | None
     gemini_reasoning: str | None
     status: DeliveryStatus
@@ -36,6 +38,7 @@ class DonationSummary(BaseModel):
     quantity: int
     pickup_lat: float
     pickup_lng: float
+    pickup_volunteer: VolunteerInfo | None = None
 
 
 class ReceiverSummary(BaseModel):

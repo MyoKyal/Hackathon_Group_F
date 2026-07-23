@@ -1,6 +1,17 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { listDonations } from "../api/donations";
+import type { VolunteerInfo } from "../types";
+
+function volunteerLine(label: string, info: VolunteerInfo | null | undefined) {
+  if (!info) return null;
+  const statusText = info.status === "accepted" ? "accepted" : "offered, not yet accepted";
+  return (
+    <div className="muted">
+      {label}: {info.full_name} ({statusText})
+    </div>
+  );
+}
 
 export default function MyDonationsPage() {
   const { data, isLoading, error } = useQuery({
@@ -21,11 +32,13 @@ export default function MyDonationsPage() {
             <span className="badge">{d.status}</span>
           </div>
           <div className="muted">
-            {d.item_category} · qty {d.quantity}
+            {d.item_category} · qty {d.quantity} · warehouse: {d.warehouse.name}
           </div>
+          {volunteerLine("Pickup volunteer (to warehouse)", d.pickup_volunteer)}
+          {volunteerLine("Delivery volunteer (warehouse to receiver)", d.delivery?.volunteer)}
           {d.delivery && (
             <p>
-              <Link to={`/deliveries/${d.delivery.id}`}>View delivery</Link>
+              <Link to={`/deliveries/${d.delivery.id}`}>View delivery details</Link>
             </p>
           )}
         </div>

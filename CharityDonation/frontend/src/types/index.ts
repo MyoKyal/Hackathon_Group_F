@@ -46,6 +46,12 @@ export interface Location {
   lng: number;
 }
 
+export interface VolunteerInfo {
+  id: string;
+  full_name: string;
+  status: "offered" | "accepted";
+}
+
 export interface WarehouseSummary {
   id: string;
   name: string;
@@ -75,6 +81,7 @@ export interface Donation {
   warehouse: WarehouseSummary;
   pickup_status: string;
   pickup_volunteer_id?: string | null;
+  pickup_volunteer?: VolunteerInfo | null;
   pickup_stage1_score?: number | null;
   pickup_gemini_reasoning?: string | null;
   pickup_volunteer_confirmed: boolean;
@@ -110,6 +117,7 @@ export interface Delivery {
   receiver_request_id?: string | null;
   receiver_id: string;
   volunteer_id?: string | null;
+  volunteer?: VolunteerInfo | null;
   stage1_score?: number | null;
   gemini_reasoning?: string | null;
   status: string;
@@ -144,6 +152,7 @@ export interface Assignment {
     quantity: number;
     pickup_lat: number;
     pickup_lng: number;
+    pickup_volunteer?: VolunteerInfo | null;
   };
   receiver?: {
     id: string;

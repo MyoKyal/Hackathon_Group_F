@@ -388,6 +388,39 @@ def get_current_volunteer_offer(db: Session, delivery: Delivery) -> UUID | None:
     return ranked[0].volunteer_id
 
 
+def resolve_pickup_volunteer(db: Session, donation: Donation) -> tuple[User, str] | None:
+    """Who is handling (or currently offered) the donor -> warehouse leg.
+
+    Returns (volunteer, "accepted") once a volunteer has accepted the job, or
+    (volunteer, "offered") for the current top-ranked candidate before anyone
+    has accepted — lets callers show donors/receivers who's on it even before
+    a formal acceptance.
+    """
+    if donation.pickup_volunteer_id is not None:
+        volunteer = db.get(User, donation.pickup_volunteer_id)
+        return (volunteer, "accepted") if volunteer else None
+    candidates = rank_volunteers_for_pickup(db, donation, limit=1)
+    if not candidates:
+        return None
+    volunteer = db.get(User, candidates[0].volunteer_id)
+    return (volunteer, "offered") if volunteer else None
+
+
+def resolve_delivery_volunteer(db: Session, delivery: Delivery) -> tuple[User, str] | None:
+    """Same as resolve_pickup_volunteer, for the warehouse -> receiver leg."""
+    if delivery.volunteer_id is not None:
+        volunteer = db.get(User, delivery.volunteer_id)
+        return (volunteer, "accepted") if volunteer else None
+    donation = db.get(Donation, delivery.donation_id)
+    if donation is None or donation.pickup_status != DeliveryStatus.completed:
+        return None
+    candidates = rank_volunteers_for_delivery(db, delivery, limit=1)
+    if not candidates:
+        return None
+    volunteer = db.get(User, candidates[0].volunteer_id)
+    return (volunteer, "offered") if volunteer else None
+
+
 def select_volunteer_for_delivery(db: Session, delivery_id: UUID) -> VolunteerMatchResult:
     delivery = db.get(Delivery, delivery_id)
     if delivery is None:

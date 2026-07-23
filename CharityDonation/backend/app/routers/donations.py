@@ -11,7 +11,6 @@ from app.schemas.donation import (
     DonationCreate,
     DonationCreateResponse,
     DonationDetailResponse,
-    DonationResponse,
     MatchPreviewItem,
 )
 from app.schemas.route import RouteResponse
@@ -29,7 +28,7 @@ def create_donation(
     return donation_service.create_donation(db, current_user, payload)
 
 
-@router.get("", response_model=list[DonationResponse])
+@router.get("", response_model=list[DonationDetailResponse])
 def list_donations(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
