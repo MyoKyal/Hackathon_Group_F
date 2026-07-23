@@ -80,6 +80,22 @@ def _call_gemini(prompt: str) -> str:
     return response.text or ""
 
 
+def _extract_json_object(text: str) -> dict:
+    """Find the first balanced {...} object in text, ignoring any stray
+    braces elsewhere in the surrounding prose."""
+    decoder = json.JSONDecoder()
+    search_from = 0
+    while True:
+        brace_index = text.find("{", search_from)
+        if brace_index == -1:
+            raise ValueError("No JSON object found in Gemini response")
+        try:
+            payload, _ = decoder.raw_decode(text, brace_index)
+            return payload
+        except json.JSONDecodeError:
+            search_from = brace_index + 1
+
+
 def _parse_selection(response_text: str, candidate_count: int) -> tuple[int, str]:
     cleaned = response_text.strip()
     if cleaned.startswith("```"):
@@ -87,12 +103,7 @@ def _parse_selection(response_text: str, candidate_count: int) -> tuple[int, str
         if cleaned.startswith("json"):
             cleaned = cleaned[4:].strip()
 
-    start = cleaned.find("{")
-    end = cleaned.rfind("}")
-    if start == -1 or end == -1:
-        raise ValueError("No JSON object found in Gemini response")
-
-    payload = json.loads(cleaned[start : end + 1])
+    payload = _extract_json_object(cleaned)
     selected_index = int(payload["selected_index"])
     reason = str(payload["reason"])
     if selected_index < 1 or selected_index > candidate_count:
