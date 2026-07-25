@@ -21,7 +21,7 @@ export default function RequestPage() {
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["requests"] });
-      navigate("/my-requests");
+      navigate("/requests/me");
     },
     onError: (err) => setError(err instanceof ApiError ? err.message : "Failed to submit request"),
   });

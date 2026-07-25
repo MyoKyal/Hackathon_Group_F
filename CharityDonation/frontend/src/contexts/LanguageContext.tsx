@@ -41,7 +41,23 @@ const translations: Record<Language, Record<string, string>> = {
     "signup.button": "Sign up",
     "signup.button.submitting": "Signing up...",
     "signup.has_account": "Already have an account?",
-    "signup.failed": "Signup failed"
+    "signup.failed": "Signup failed",
+
+    "home.hero.title": "Bringing warmth to every community",
+    "home.hero.subtitle": "Join our network of donors and volunteers to provide essential goods, food, and care to those in need. Your contribution brings a warm hug to the world.",
+    "home.hero.donate_btn": "Donate Now",
+    "home.hero.request_btn": "Request Help",
+    "home.hero.join_btn": "Join the Community",
+    "home.how_it_works": "How it works",
+    "home.give.title": "Give with a Warm Hug",
+    "home.give.desc": "List items or food you'd like to donate. Our volunteers will pick it up and deliver it securely to the community.",
+    "home.req.title": "Request Essentials",
+    "home.req.desc": "Communities in need can easily request specific items. We match your request with generous donors nearby.",
+    "home.vol.title": "Volunteer Dispatch",
+    "home.vol.desc": "Join our dispatch team. Use your vehicle or time to securely transport goods from donors to those who need them most.",
+    "home.ready.title": "Ready to make a difference?",
+    "home.ready.desc": "Whether you're giving, receiving, or delivering, every action brings a warm hug to those who need it most.",
+    "home.ready.btn": "Explore Active Donations"
   },
   mm: {
     "app.title": "အလှူငွေ လှူဒါန်းရန်",
@@ -75,17 +91,59 @@ const translations: Record<Language, Record<string, string>> = {
     "signup.button": "အကောင့်ဖွင့်မည်",
     "signup.button.submitting": "အကောင့်ဖွင့်နေသည်...",
     "signup.has_account": "အကောင့်ရှိပြီးသားလား?",
-    "signup.failed": "အကောင့်ဖွင့်ခြင်း မအောင်မြင်ပါ"
+    "signup.failed": "အကောင့်ဖွင့်ခြင်း မအောင်မြင်ပါ",
+
+    "home.hero.title": "လူမှုအသိုင်းအဝိုင်းတိုင်းဆီသို့ နွေးထွေးမှုများ ယူဆောင်လာပေးခြင်း",
+    "home.hero.subtitle": "အကူအညီလိုအပ်နေသူများအတွက် မရှိမဖြစ်လိုအပ်သော ပစ္စည်းများ၊ အစားအစာနှင့် စောင့်ရှောက်မှုများ ပေးအပ်ရန် ကျွန်ုပ်တို့၏ အလှူရှင်များနှင့် စေတနာ့ဝန်ထမ်းများ ကွန်ရက်တွင် ပါဝင်လိုက်ပါ။ သင့်၏လှူဒါန်းမှုက ကမ္ဘာကြီးအတွက် နွေးထွေးသော ပွေ့ဖက်မှုတစ်ခုကို ယူဆောင်လာပေးပါသည်။",
+    "home.hero.donate_btn": "ယခုလှူဒါန်းမည်",
+    "home.hero.request_btn": "အကူအညီတောင်းခံမည်",
+    "home.hero.join_btn": "အသိုင်းအဝိုင်းသို့ ဝင်ရောက်မည်",
+    "home.how_it_works": "မည်သို့အလုပ်လုပ်သနည်း",
+    "home.give.title": "နွေးထွေးစွာ လှူဒါန်းပါ",
+    "home.give.desc": "သင်လှူဒါန်းလိုသော ပစ္စည်းများ သို့မဟုတ် အစားအစာများကို စာရင်းသွင်းပါ။ ကျွန်ုပ်တို့၏ စေတနာ့ဝန်ထမ်းများက လာရောက်ယူဆောင်ပြီး လိုအပ်သူများထံ လုံခြုံစွာ ပို့ဆောင်ပေးမည်ဖြစ်ပါသည်။",
+    "home.req.title": "လိုအပ်သောပစ္စည်းများ တောင်းဆိုရန်",
+    "home.req.desc": "အကူအညီလိုအပ်နေသော အသိုင်းအဝိုင်းများသည် လိုအပ်သော ပစ္စည်းများကို အလွယ်တကူ တောင်းဆိုနိုင်ပါသည်။ သင့်တောင်းဆိုမှုကို အနီးအနားရှိ အလှူရှင်များနှင့် ကျွန်ုပ်တို့ ချိတ်ဆက်ပေးပါမည်။",
+    "home.vol.title": "စေတနာ့ဝန်ထမ်း ပို့ဆောင်ရေး",
+    "home.vol.desc": "ကျွန်ုပ်တို့၏ ပို့ဆောင်ရေးအဖွဲ့တွင် ပါဝင်ပါ။ သင့်ယာဉ် သို့မဟုတ် အချိန်ကို အသုံးပြု၍ အလှူရှင်များထံမှ လိုအပ်သူများထံသို့ ပစ္စည်းများကို လုံခြုံစွာ ပို့ဆောင်ပေးပါ။",
+    "home.ready.title": "အပြောင်းအလဲတစ်ခုပြုလုပ်ရန် အဆင်သင့်ဖြစ်ပြီလား?",
+    "home.ready.desc": "သင်သည် ပေးကမ်းသူ၊ လက်ခံသူ၊ သို့မဟုတ် ပို့ဆောင်ပေးသူ မည်သူပင်ဖြစ်စေ သင့်လုပ်ရပ်တိုင်းသည် လိုအပ်နေသူများအတွက် နွေးထွေးသော ပွေ့ဖက်မှုတစ်ခု ဖြစ်စေပါသည်။",
+    "home.ready.btn": "လှူဒါန်းမှုများကို ရှာဖွေရန်"
   }
 };
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
 
 export function LanguageProvider({ children }: { children: ReactNode }) {
-  const [language, setLanguage] = useState<Language>('en');
+  const getInitialLang = (): Language => {
+    if (typeof document !== 'undefined') {
+      const match = document.cookie.match(/googtrans=\/en\/(en|my)/);
+      if (match && match[1] === 'my') {
+        return 'mm';
+      }
+    }
+    return 'en';
+  };
+
+  const [language, setLangState] = useState<Language>(getInitialLang());
+
+  const setLanguage = (lang: Language) => {
+    setLangState(lang);
+    
+    // Setup Google Translate API cookies
+    const googleLang = lang === 'mm' ? 'my' : 'en';
+    document.cookie = `googtrans=/en/${googleLang}; path=/`;
+    document.cookie = `googtrans=/en/${googleLang}; domain=${window.location.hostname}; path=/`;
+    
+    // Reload page to trigger the API translation
+    window.location.reload();
+  };
 
   const t = (key: string) => {
-    return translations[language][key] || key;
+    // When using Google Translate, we return English text so the API can translate it,
+    // but we can still return manual translations if they exist.
+    // To ensure Google API handles everything including dynamic text smoothly,
+    // returning the English string here allows Google to translate the whole DOM equally.
+    return translations['en'][key] || key;
   };
 
   return (

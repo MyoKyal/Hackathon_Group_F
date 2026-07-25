@@ -47,7 +47,7 @@ export function Header() {
       position: 'relative',
       zIndex: 1000
     }}>
-      <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontWeight: 800, textDecoration: "none", fontSize: '1.75rem', letterSpacing: '-0.03em' }}>
+      <Link to="/" className="notranslate" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontWeight: 800, textDecoration: "none", fontSize: '1.75rem', letterSpacing: '-0.03em' }}>
         <WarmHugLogo />
         <div style={{ display: 'flex' }}>
           <span style={{ color: 'var(--text)' }}>Warm</span>

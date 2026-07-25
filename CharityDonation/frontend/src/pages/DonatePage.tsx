@@ -23,7 +23,7 @@ export default function DonatePage() {
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["donations"] });
-      navigate("/my-donations");
+      navigate("/donations/me");
     },
     onError: (err) => setError(err instanceof ApiError ? err.message : "Failed to submit donation"),
   });
